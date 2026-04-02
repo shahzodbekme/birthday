@@ -1,13 +1,7 @@
 {
-  "name": "ai-bot",
+  "name": "aloqa-bot",
   "version": "1.0.0",
-  "description": "",
   "main": "bot.js",
-  "dependencies": {
-    "@google/generative-ai": "^0.2.1",
-    "grammy": "^1.20.0",
-    "dotenv": "^16.4.1"
-  },
   "scripts": {
     "start": "node bot.js"
   }
