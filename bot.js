@@ -35,9 +35,13 @@ function api(method, params = {}) {
 // Gemini AI orqali javob olish
 function getAIResponse(prompt) {
     return new Promise((resolve) => {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+        // Yangilangan URL: v1beta emas, v1 ishlatamiz va model nomi aniqlandi
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+        
         const data = JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
+            contents: [{
+                parts: [{ text: prompt }]
+            }]
         });
 
         const req = https.request(url, {
@@ -49,23 +53,29 @@ function getAIResponse(prompt) {
             res.on('end', () => {
                 try {
                     const json = JSON.parse(body);
-                    if (json.candidates && json.candidates[0].content) {
+                    // Google javobini tekshirish
+                    if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
                         resolve(json.candidates[0].content.parts[0].text);
                     } else {
-                        console.log("AI xatosi:", body);
-                        resolve("Hozircha tushunmadim, qaytadan yozing.");
+                        console.log("AI Javob bermadi, xato:", body);
+                        resolve("Hozircha tushunmadim, qaytadan yozib ko'ring.");
                     }
                 } catch (e) {
+                    console.log("JSON xatosi:", e.message);
                     resolve("Xatolik yuz berdi. Birozdan so'ng urining.");
                 }
             });
         });
-        req.on('error', (e) => resolve("Aloqa uzildi: " + e.message));
+
+        req.on('error', (e) => {
+            console.error("So'rov xatosi:", e.message);
+            resolve("Aloqa uzildi.");
+        });
+
         req.write(data);
         req.end();
     });
 }
-
 async function main() {
     try {
         const response = await api('getUpdates', { offset: lastUpdateId + 1, timeout: 30 });
