@@ -1,17 +1,22 @@
 const https = require('https');
+const http = require('http');
 
-// Tokenlarni o'zgaruvchilardan olamiz
-const TOKEN = process.env.BOT_TOKEN;
-const ADMIN_ID = process.env.ADMIN_ID; // Sizning Telegram ID'ngiz
+// TOKENLARNI SHU YERGA YOZING
+const TOKEN = "8263789071:AAEDCu_fRkOakUkT8EkzhUDjL10bpxDxWXI";
+const ADMIN_ID = "6230877154"; 
 
 let lastUpdateId = 0;
+let adminState = {}; 
 
-// Telegram API ga so'rov yuborish funksiyasi
+// Render uchun port (O'zgartirmang)
+http.createServer((req, res) => {
+    res.write("AI Bot is running");
+    res.end();
+}).listen(process.env.PORT || 10000);
+
 function api(method, params = {}) {
     return new Promise((resolve) => {
         const url = `https://api.telegram.org/bot${TOKEN}/${method}`;
-        const data = JSON.stringify(params);
-
         const req = https.request(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
@@ -20,71 +25,72 @@ function api(method, params = {}) {
             res.on('data', (chunk) => body += chunk);
             res.on('end', () => resolve(JSON.parse(body)));
         });
-
-        req.write(data);
+        req.write(JSON.stringify(params));
         req.end();
     });
 }
 
-// Xabarlarni tekshirish (Long Polling)
-async function getUpdates() {
-    const response = await api('getUpdates', {
-        offset: lastUpdateId + 1,
-        timeout: 30
-    });
-
-    if (response.ok && response.result.length > 0) {
-        for (const update of response.result) {
-            lastUpdateId = update.update_id;
-            handleUpdate(update);
+async function main() {
+    try {
+        const response = await api('getUpdates', { offset: lastUpdateId + 1, timeout: 30 });
+        if (response.ok && response.result.length > 0) {
+            for (const update of response.result) {
+                lastUpdateId = update.update_id;
+                if (update.message) await handleMessage(update.message);
+                if (update.callback_query) await handleCallback(update.callback_query);
+            }
         }
-    }
-    getUpdates(); // Keyingi tekshiruv
+    } catch (e) { console.error("Xatolik:", e.message); }
+    setTimeout(main, 1000);
 }
 
-// Xabarlarni qayta ishlash mantiqi
-async function handleUpdate(update) {
-    if (!update.message) return;
+async function handleMessage(msg) {
+    const chatId = msg.chat.id;
+    const text = msg.text;
 
-    const chatId = update.message.chat.id;
-    const text = update.message.text;
-    const userId = update.message.from.id;
-
-    // 1. Start komandasi
     if (text === '/start') {
-        return api('sendMessage', {
-            chat_id: chatId,
-            text: "Salom! Savolingizni yozib qoldiring, admin tez orada javob beradi."
-        });
+        return api('sendMessage', { chat_id: chatId, text: "Assalomu alaykum! Xabaringizni yozing." });
     }
 
-    // 2. Adminga xabar yuborish (Foydalanuvchidan kelgan xabar)
+    // Admin javob yozayotgan holat
+    if (chatId.toString() === ADMIN_ID.toString() && adminState[ADMIN_ID]) {
+        const targetUserId = adminState[ADMIN_ID];
+        await api('sendMessage', { 
+            chat_id: targetUserId, 
+            text: `👨‍💻 **Admin javobi:**\n\n${text}`, 
+            parse_mode: 'Markdown' 
+        });
+        await api('sendMessage', { chat_id: ADMIN_ID, text: "✅ Javob yuborildi." });
+        delete adminState[ADMIN_ID];
+        return;
+    }
+
+    // Foydalanuvchidan adminga
     if (chatId.toString() !== ADMIN_ID.toString()) {
         await api('sendMessage', {
             chat_id: ADMIN_ID,
-            text: `📩 **Yangi xabar!**\nKimdan: ${update.message.from.first_name}\nID: ${userId}\n\nMatn: ${text}`,
-            parse_mode: 'Markdown'
+            text: `📩 **Yangi xabar!**\nKimdan: ${msg.from.first_name}\nID: ${chatId}\n\nMatn: ${text}`,
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: "Javob berish ✍️", callback_data: `reply_${chatId}` }
+                ]]
+            }
         });
-        return api('sendMessage', { chat_id: chatId, text: "Xabaringiz adminga yetkazildi. Kuting." });
-    }
-
-    // 3. Admin javob qaytarishi (Reply usulida)
-    if (chatId.toString() === ADMIN_ID.toString() && update.message.reply_to_message) {
-        // Admin xabarga "Reply" qilib yozsa, o'sha foydalanuvchiga ketadi
-        const replyText = update.message.reply_to_message.text;
-        const targetUserId = replyText.match(/ID: (\d+)/)?.[1];
-
-        if (targetUserId) {
-            await api('sendMessage', {
-                chat_id: targetUserId,
-                text: `👨‍💻 **Admin javobi:**\n\n${text}`,
-                parse_mode: 'Markdown'
-            });
-            return api('sendMessage', { chat_id: ADMIN_ID, text: "✅ Javob yuborildi." });
-        }
+        return api('sendMessage', { chat_id: chatId, text: "Xabaringiz yuborildi." });
     }
 }
 
-// Botni ishga tushirish
-console.log("Bot ishlamoqda...");
-getUpdates();
+async function handleCallback(query) {
+    const data = query.data;
+    if (data.startsWith('reply_')) {
+        const userId = data.split('_')[1];
+        adminState[ADMIN_ID] = userId;
+        await api('answerCallbackQuery', { callback_query_id: query.id });
+        await api('sendMessage', { 
+            chat_id: ADMIN_ID, 
+            text: `📝 ID: ${userId} uchun javob yozing:` 
+        });
+    }
+}
+
+main();
