@@ -13,7 +13,7 @@ const CHANNELS = ["@avtomess"];
 const MOVIES = {
     "101": { title: "Forsaj 10", file_id: "BAACAgIAAxkBAA..." },
     "102": { title: "O'rgimchak odam", file_id: "BAACAgIAAxkBAA..." },
-    "103": { title: "Avatar 2", file_id: "BAACAgIAAxkBAA..." }
+    "103": { title: "Avatar 2", file_id: "https://t.me/simonsinek2/439" }
 };
 
 let lastUpdateId = 0;
