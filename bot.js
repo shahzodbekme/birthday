@@ -6,7 +6,7 @@ const TOKEN = "8263789071:AAEDCu_fRkOakUkT8EkzhUDjL10bpxDxWXI";
 const ADMIN_ID = "ID_RAQAMINGIZ"; 
 
 // Majburiy obuna kanallari (Masalan: @kanal_nomi)
-const CHANNELS = ["@vtomess"]; 
+const CHANNELS = ["@avtomess"]; 
 
 // Kino ma'lumotlar bazasi (Kod: Video_File_ID)
 // Video File ID ni olish uchun botga kinoni yuborsangiz logsda chiqadi
