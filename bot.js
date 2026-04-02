@@ -2,7 +2,7 @@ const https = require('https');
 const http = require('http');
 
 // TOKENLARNI SHU YERGA YOZING
-const TOKEN = "8263789071:AAEDCu_fRkOakUkT8EkzhUDjL10bpxDxWXI";
+const TOKEN = "8263789071:AAHavkYj54gbhJ7YsdPZFgclYjFSQjFslUE";
 const ADMIN_ID = "ID_RAQAMINGIZ"; 
 
 // Majburiy obuna kanallari (Masalan: @kanal_nomi)
