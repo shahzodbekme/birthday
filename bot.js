@@ -37,7 +37,7 @@ function getAIResponse(prompt) {
     return new Promise((resolve) => {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
         const data = JSON.stringify({
-            contents: [{ parts: [{ text: `Sen aqlli yordamchisan. O'zbek tilida qisqa va aniq javob ber. Foydalanuvchi yozdi: ${prompt}` }] }]
+            contents: [{ parts: [{ text: prompt }] }]
         });
 
         const req = https.request(url, {
@@ -49,10 +49,18 @@ function getAIResponse(prompt) {
             res.on('end', () => {
                 try {
                     const json = JSON.parse(body);
-                    resolve(json.candidates[0].content.parts[0].text);
-                } catch (e) { resolve("Kechirasiz, hozir javob bera olmayman."); }
+                    if (json.candidates && json.candidates[0].content) {
+                        resolve(json.candidates[0].content.parts[0].text);
+                    } else {
+                        console.log("AI xatosi:", body);
+                        resolve("Hozircha tushunmadim, qaytadan yozing.");
+                    }
+                } catch (e) {
+                    resolve("Xatolik yuz berdi. Birozdan so'ng urining.");
+                }
             });
         });
+        req.on('error', (e) => resolve("Aloqa uzildi: " + e.message));
         req.write(data);
         req.end();
     });
